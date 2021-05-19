@@ -1,0 +1,120 @@
+#@Professor Project rules:
+#Rule 1: Function must have return value. 		Function: primeCheck 
+#Rule 2: Function must have at least 1 argument 	Function: primeCheck,increment
+#Rule 3: Function must be used more than once 		Function: factorCounter, factorPrint 
+
+.data
+	prompt:		.asciiz "\nEnter a number>=1(0 To terminate): "
+	errorMessage:	.asciiz"\nERROR:Number entered less than 0."
+	factorsMessage:	.asciiz"\nThe factors of "
+	are:		.asciiz" are:\n"
+	compositeNum:	.asciiz":composite\n"
+	primeNum:	.asciiz":prime\n"
+	Neither:	.asciiz":neither\n"
+	comma:		.asciiz","
+
+.text
+main:
+	addi $a1, $zero, 0 #User input register, also dividend in prime check equation 	(x)
+	addi $a2, $zero, 0 #Incrementing Divisor					(y)
+	addi $t3, $zero, 0 #Factor counter if(==1)#One if(==2)Prime if(>2){Composite}
+
+	jal userInput
+	move $a1, $v0 #Move input to a1
+	blt $a1, 0, error #If number entered >0 output error and start over
+	beqz $a1, terminate #End Program on 0 entry
+	
+	#If number is valid, output first part of factors message. Not in loop because it doesn't need to be repeated
+	li $v0, 4
+	la $a0, factorsMessage
+	syscall
+	li $v0, 1
+	move $a0, $a1  #Print user input as part of output string
+	syscall
+	li $v0, 4
+	la $a0, are
+	syscall
+	
+
+	
+	
+	
+	while:
+		jal increment #x value +1
+		jal primeCheck # userinput / x
+		beq $a1, $a2, exit #Loop Break, If divisor==dividend leave loop
+		beqz $v1, factorYes
+
+			#Case: Remainder is 1, not a factor
+			factorNo:
+			j while
+			#Case: Remainder is 0, it is a factor
+			factorYes:
+			jal factorPrint
+			jal factorCounter # Keeps track of how many factors were found
+			j while		
+	exit:
+		#Exit loop upon divisor(final factor)==dividend
+		jal factorPrint   #When loop is exited print final factor
+		jal factorCounter 
+		beq $t3, 1, userInput1
+		beq $t3, 2, inputPrime
+		
+			#Case: t3>2 Composite number
+			li $v0, 4 
+			la $a0, compositeNum
+			syscall
+			j main
+			#Case: t3==1
+			userInput1: 
+			li $v0, 4 fff
+			la $a0, Neither 
+			syscall
+			j main
+			#Case: t3==2 Prime Number
+			inputPrime:
+			li $v0, 4 
+			la $a0, primeNum 
+			syscall
+			j main
+
+terminate:	
+		li $v0, 10
+		syscall
+	
+userInput:
+		#Take user input and return value in v0
+		li $v0, 4
+		la $a0, prompt
+		syscall
+		li $v0, 5
+		syscall
+		jr $ra		
+		
+primeCheck:
+	#Divide the user input 
+	div $a1, $a2 #User input divided by x value
+	mfhi $v1 #store the remainder in v1
+	jr $ra
+increment:
+	#Loop counter +1 at start of loop
+	addi $a2, $a2, 1 #Increment Divisor
+	jr $ra
+factorCounter:
+	#Prime counter +1 whenever remainder is 0
+	addi $t3, $t3, 1 #Increment Prime counter
+	jr $ra
+error:
+	li $v0, 4
+	la $a0, errorMessage
+	syscall
+	j main
+factorPrint:
+	#Print the divisor
+	li $v0, 1
+	move $a0, $a2
+	syscall
+	li $v0, 4
+	la $a0, comma
+	syscall
+	jr $ra
